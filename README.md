@@ -1,9 +1,10 @@
 # gradle-linear-iorses-add-repro
 
 This repo reproduces a performance issue with Gradle's `IterationOrderRetainingSetElementSource` collection in 6.x
-and 7.0 in which the `add` operation takes a linear amount of time, because it is iterating over each element of the set
-in order to check if the element is already present. This means adding N elements to the set takes O(N^2) time. I'd
-expect this collection to have O(1) `add` operations like a `LinkedHashSet`.
+and 7.0 in which the `add` operation takes a linear amount of time, because it [iterates over each element of the set
+in order to check if the element is already present](https://github.com/gradle/gradle/blob/v6.8.3/subprojects/core/src/main/java/org/gradle/api/internal/collections/IterationOrderRetainingSetElementSource.java#L50).
+This means adding N elements to the set takes O(N^2) time. I'd expect this collection to have O(1) `add` operations
+like a `LinkedHashSet`.
 
 As shown in the additional test tasks, this affects the performance of adding a large number of dependency constraints
 to a configuration.
