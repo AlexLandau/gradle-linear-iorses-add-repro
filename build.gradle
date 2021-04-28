@@ -1,0 +1,57 @@
+import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyConstraint
+import org.gradle.api.internal.collections.IterationOrderRetainingSetElementSource
+
+// Reproduces the collection's timing issue directly
+// Weirdly, this example is slower than the others. I don't know why.
+tasks.register("testCollectionAdd") {
+    doLast {
+        IterationOrderRetainingSetElementSource<String> collection = new IterationOrderRetainingSetElementSource<>()
+
+        for (int i in 1..10) {
+            long startTime = System.nanoTime()
+            for (int j in 1..500) {
+                collection.add("elem$i-$j")
+            }
+            long elapsedTime = System.nanoTime() - startTime
+            println "Time to add 500 elements (ns): $elapsedTime"
+        }
+    }
+}
+
+// Reproduces the issue less directly, in a more practical context
+tasks.register("testAddingConstraintsToConfiguration") {
+    doLast {
+        def configuration = project.getConfigurations().create("testConfiguration")
+        def dependencyConstraints = configuration.getDependencyConstraints()
+
+        for (int i in 1..10) {
+            long startTime = System.nanoTime()
+            for (int j in 1..1000) {
+                dependencyConstraints.add(new DefaultDependencyConstraint("fakegroup", "module$i-$j", "version"))
+            }
+            long elapsedTime = System.nanoTime() - startTime
+            println "Time to add 1000 elements (ns): $elapsedTime"
+        }
+    }
+}
+
+
+// Reproduces the issue even less directly, in another practical context
+tasks.register("testAddingConstraintsToConfiguration2") {
+    doLast {
+        project.getConfigurations().create("testConfiguration2")
+
+        for (int i in 1..10) {
+            long startTime = System.nanoTime()
+            for (int j in 1..1000) {
+                dependencies {
+                    constraints {
+                        testConfiguration2 "fakegroup:module$i-$j:version"
+                    }
+                }
+            }
+            long elapsedTime = System.nanoTime() - startTime
+            println "Time to add 1000 elements (ns): $elapsedTime"
+        }
+    }
+}
